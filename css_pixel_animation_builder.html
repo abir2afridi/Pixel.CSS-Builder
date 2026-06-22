@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font-sans,sans-serif);background:transparent;color:var(--color-text-primary)}
+h2.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
+
+.app{display:grid;grid-template-columns:1fr 340px;gap:0;min-height:600px}
+.canvas-panel{border-right:0.5px solid var(--color-border-tertiary);display:flex;flex-direction:column}
+.controls-panel{display:flex;flex-direction:column;overflow-y:auto;max-height:700px}
+
+/* Toolbar */
+.toolbar{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:0.5px solid var(--color-border-tertiary);flex-wrap:wrap}
+.toolbar-label{font-size:12px;color:var(--color-text-secondary);margin-right:2px}
+.tool-btn{padding:5px 11px;font-size:12px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);background:transparent;color:var(--color-text-primary);cursor:pointer;transition:background 0.15s}
+.tool-btn:hover{background:var(--color-background-secondary)}
+.tool-btn.active{background:var(--color-background-info);color:var(--color-text-info);border-color:var(--color-border-info)}
+.color-swatch{width:22px;height:22px;border-radius:4px;border:0.5px solid var(--color-border-primary);cursor:pointer;position:relative}
+.color-swatch input[type=color]{opacity:0;position:absolute;inset:0;width:100%;height:100%;cursor:pointer;border:none}
+.sep{width:0.5px;height:20px;background:var(--color-border-tertiary);margin:0 4px}
+
+/* Grid canvas */
+.grid-wrap{flex:1;display:flex;align-items:center;justify-content:center;padding:24px;background:var(--color-background-secondary)}
+#pixel-grid{display:grid;gap:1px;background:var(--color-border-tertiary);border:0.5px solid var(--color-border-secondary);border-radius:4px}
+.cell{background:var(--color-background-primary);cursor:crosshair;transition:none}
+.cell:hover{opacity:0.7}
+
+/* Preview area */
+.preview-bar{display:flex;align-items:center;gap:12px;padding:10px 14px;border-top:0.5px solid var(--color-border-tertiary);border-bottom:0.5px solid var(--color-border-tertiary);background:var(--color-background-primary)}
+.preview-bar span{font-size:12px;color:var(--color-text-secondary)}
+#preview-container{display:flex;align-items:center;justify-content:center;min-width:80px;min-height:40px;position:relative}
+
+/* Controls panel */
+.ctrl-section{padding:14px 16px;border-bottom:0.5px solid var(--color-border-tertiary)}
+.ctrl-section-title{font-size:11px;font-weight:500;color:var(--color-text-secondary);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px}
+.ctrl-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.ctrl-label{font-size:13px;color:var(--color-text-primary)}
+.ctrl-val{font-size:12px;color:var(--color-text-secondary);min-width:36px;text-align:right}
+input[type=range]{width:120px}
+
+/* Presets */
+.preset-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:2px}
+.preset-btn{padding:8px 10px;font-size:12px;border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);background:var(--color-background-secondary);color:var(--color-text-primary);cursor:pointer;text-align:left;transition:background 0.15s}
+.preset-btn:hover{background:var(--color-background-primary);border-color:var(--color-border-secondary)}
+.preset-icon{display:block;font-size:18px;margin-bottom:2px;line-height:1}
+.preset-name{font-weight:500;display:block}
+.preset-desc{font-size:10px;color:var(--color-text-secondary);display:block;margin-top:1px}
+
+/* Anim toggles */
+.anim-list{display:flex;flex-direction:column;gap:6px}
+.anim-item{display:flex;align-items:center;justify-content:space-between;padding:7px 10px;border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);background:var(--color-background-secondary)}
+.anim-item-left{display:flex;align-items:center;gap:8px}
+.anim-item-name{font-size:13px}
+.anim-badge{font-size:10px;padding:1px 6px;border-radius:10px;background:var(--color-background-info);color:var(--color-text-info)}
+.toggle{width:32px;height:18px;border-radius:9px;background:var(--color-border-secondary);cursor:pointer;position:relative;transition:background 0.2s;border:none}
+.toggle.on{background:#4f8ef7}
+.toggle::after{content:'';position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:white;transition:transform 0.2s}
+.toggle.on::after{transform:translateX(14px)}
+
+/* Flicker palette */
+.flicker-palette{display:grid;grid-template-columns:repeat(6,1fr);gap:4px;margin-top:4px}
+.fp-swatch{height:22px;border-radius:3px;cursor:pointer;border:2px solid transparent;transition:border-color 0.1s}
+.fp-swatch.selected{border-color:var(--color-text-primary)}
+
+/* Export */
+.export-area{padding:14px 16px}
+.export-btn{width:100%;padding:9px;font-size:13px;font-weight:500;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);background:transparent;color:var(--color-text-primary);cursor:pointer;transition:background 0.15s;margin-bottom:8px}
+.export-btn:hover{background:var(--color-background-secondary)}
+.export-btn.primary{background:var(--color-background-info);color:var(--color-text-info);border-color:var(--color-border-info)}
+.export-btn.primary:hover{opacity:0.85}
+.code-out{font-family:var(--font-mono,monospace);font-size:10px;background:var(--color-background-secondary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);padding:10px;max-height:160px;overflow-y:auto;white-space:pre;color:var(--color-text-secondary);display:none;margin-top:8px;word-break:break-all;white-space:pre-wrap}
+
+/* Live preview pixel ghost */
+.pg{position:relative;display:inline-block}
+.pg-body{display:grid;image-rendering:pixelated;position:relative}
+.pg-shadow{position:absolute;border-radius:50%;filter:blur(8px);bottom:-8px;left:50%;transform:translateX(-50%)}
+
+select{padding:4px 8px;font-size:12px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);background:var(--color-background-primary);color:var(--color-text-primary);cursor:pointer}
+</style>
+</head>
+<body>
+<h2 class="sr-only">CSS Pixel Animation Builder — draw pixel art and generate animated CSS ghost/character loaders</h2>
+
+<div class="app">
+  <!-- LEFT: Canvas -->
+  <div class="canvas-panel">
+    <div class="toolbar">
+      <span class="toolbar-label">Tool:</span>
+      <button class="tool-btn active" id="btn-draw" onclick="setTool('draw')">Draw</button>
+      <button class="tool-btn" id="btn-erase" onclick="setTool('erase')">Erase</button>
+      <button class="tool-btn" id="btn-fill" onclick="setTool('fill')">Fill</button>
+      <div class="sep"></div>
+      <span class="toolbar-label">Color:</span>
+      <div class="color-swatch" id="active-swatch" style="background:#e24b4a">
+        <input type="color" id="color-picker" value="#e24b4a" oninput="setDrawColor(this.value)">
+      </div>
+      <div class="sep"></div>
+      <select id="grid-size" onchange="resizeGrid(this.value)">
+        <option value="8">8×8</option>
+        <option value="10">10×10</option>
+        <option value="14" selected>14×14</option>
+        <option value="16">16×16</option>
+        <option value="20">20×20</option>
+        <option value="24">24×24</option>
+      </select>
+      <div class="sep"></div>
+      <button class="tool-btn" onclick="clearGrid()">Clear</button>
+      <button class="tool-btn" onclick="loadPresetPixels('ghost1')">Ghost 1</button>
+      <button class="tool-btn" onclick="loadPresetPixels('ghost2')">Ghost 2</button>
+    </div>
+
+    <div class="grid-wrap">
+      <div id="pixel-grid"></div>
+    </div>
+
+    <div class="preview-bar">
+      <span>Live preview:</span>
+      <div id="preview-container"></div>
+      <span id="preview-label" style="font-size:11px;color:var(--color-text-secondary)"></span>
+      <div style="margin-left:auto;display:flex;gap:6px">
+        <button class="tool-btn" onclick="togglePreviewBg()">Toggle BG</button>
+        <select id="preview-scale" onchange="updatePreview()">
+          <option value="2">2×</option>
+          <option value="3" selected>3×</option>
+          <option value="4">4×</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT: Controls -->
+  <div class="controls-panel">
+
+    <!-- Presets -->
+    <div class="ctrl-section">
+      <div class="ctrl-section-title">Animation presets</div>
+      <div class="preset-grid">
+        <button class="preset-btn" onclick="applyAnimPreset('float')">
+          <span class="preset-icon">👻</span>
+          <span class="preset-name">Float</span>
+          <span class="preset-desc">Up-down hover loop</span>
+        </button>
+        <button class="preset-btn" onclick="applyAnimPreset('flicker')">
+          <span class="preset-icon">✨</span>
+          <span class="preset-name">Flicker</span>
+          <span class="preset-desc">Pixel flicker tentacles</span>
+        </button>
+        <button class="preset-btn" onclick="applyAnimPreset('pulse')">
+          <span class="preset-icon">💓</span>
+          <span class="preset-name">Pulse</span>
+          <span class="preset-desc">Scale breathe effect</span>
+        </button>
+        <button class="preset-btn" onclick="applyAnimPreset('shake')">
+          <span class="preset-icon">⚡</span>
+          <span class="preset-name">Shake</span>
+          <span class="preset-desc">Rapid X jitter</span>
+        </button>
+        <button class="preset-btn" onclick="applyAnimPreset('spin')">
+          <span class="preset-icon">🌀</span>
+          <span class="preset-name">Spin</span>
+          <span class="preset-desc">Full 360 rotation</span>
+        </button>
+        <button class="preset-btn" onclick="applyAnimPreset('wave')">
+          <span class="preset-icon">🌊</span>
+          <span class="preset-name">Wave</span>
+          <span class="preset-desc">Skew side to side</span>
+        </button>
+        <button class="preset-btn" onclick="applyAnimPreset('bounce')">
+          <span class="preset-icon">🏀</span>
+          <span class="preset-name">Bounce</span>
+          <span class="preset-desc">Squash & stretch</span>
+        </button>
+        <button class="preset-btn" onclick="applyAnimPreset('drift')">
+          <span class="preset-icon">🍃</span>
+          <span class="preset-name">Drift</span>
+          <span class="preset-desc">Slow X+Y drift</span>
+        </button>
+        <button class="preset-btn" onclick="applyAnimPreset('heartbeat')">
+          <span class="preset-icon">❤️</span>
+          <span class="preset-name">Heartbeat</span>
+          <span class="preset-desc">Double-pump scale</span>
+        </button>
+        <button class="preset-btn" onclick="applyAnimPreset('glitch')">
+          <span class="preset-icon">📺</span>
+          <span class="preset-name">Glitch</span>
+          <span class="preset-desc">Skew + translate</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Animation controls -->
+    <div class="ctrl-section">
+      <div class="ctrl-section-title">Animation controls</div>
+      <div class="ctrl-row">
+        <span class="ctrl-label">Speed</span>
+        <input type="range" id="ctrl-speed" min="100" max="3000" step="50" value="500" oninput="updateAnimCtrl()">
+        <span class="ctrl-val" id="val-speed">0.5s</span>
+      </div>
+      <div class="ctrl-row">
+        <span class="ctrl-label">Float height</span>
+        <input type="range" id="ctrl-float" min="2" max="30" step="1" value="10" oninput="updateAnimCtrl()">
+        <span class="ctrl-val" id="val-float">10px</span>
+      </div>
+      <div class="ctrl-row">
+        <span class="ctrl-label">Scale factor</span>
+        <input type="range" id="ctrl-scale" min="1.0" max="2.0" step="0.05" value="1.0" oninput="updateAnimCtrl()">
+        <span class="ctrl-val" id="val-scale">1.0×</span>
+      </div>
+      <div class="ctrl-row">
+        <span class="ctrl-label">Rotation deg</span>
+        <input type="range" id="ctrl-rot" min="0" max="360" step="5" value="0" oninput="updateAnimCtrl()">
+        <span class="ctrl-val" id="val-rot">0°</span>
+      </div>
+      <div class="ctrl-row">
+        <span class="ctrl-label">Timing fn</span>
+        <select id="ctrl-timing" onchange="updateAnimCtrl()">
+          <option value="ease-in-out">ease-in-out</option>
+          <option value="linear">linear</option>
+          <option value="steps(2)">steps(2) — pixel</option>
+          <option value="steps(4)">steps(4)</option>
+          <option value="cubic-bezier(0.68,-0.55,0.27,1.55)">spring</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Layer toggles -->
+    <div class="ctrl-section">
+      <div class="ctrl-section-title">Animation layers</div>
+      <div class="anim-list">
+        <div class="anim-item">
+          <div class="anim-item-left">
+            <span class="anim-item-name">Float</span>
+            <span class="anim-badge">body</span>
+          </div>
+          <button class="toggle on" id="tog-float" onclick="toggleLayer('float',this)"></button>
+        </div>
+        <div class="anim-item">
+          <div class="anim-item-left">
+            <span class="anim-item-name">Flicker</span>
+            <span class="anim-badge">pixels</span>
+          </div>
+          <button class="toggle on" id="tog-flicker" onclick="toggleLayer('flicker',this)"></button>
+        </div>
+        <div class="anim-item">
+          <div class="anim-item-left">
+            <span class="anim-item-name">Shadow</span>
+            <span class="anim-badge">ground</span>
+          </div>
+          <button class="toggle on" id="tog-shadow" onclick="toggleLayer('shadow',this)"></button>
+        </div>
+        <div class="anim-item">
+          <div class="anim-item-left">
+            <span class="anim-item-name">Eye movement</span>
+            <span class="anim-badge">pupils</span>
+          </div>
+          <button class="toggle on" id="tog-eyes" onclick="toggleLayer('eyes',this)"></button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Flicker color -->
+    <div class="ctrl-section">
+      <div class="ctrl-section-title">Flicker pixel color</div>
+      <div class="flicker-palette">
+        <div class="fp-swatch selected" style="background:#e24b4a" data-c="#e24b4a" onclick="setFlickerColor(this)"></div>
+        <div class="fp-swatch" style="background:#378add" data-c="#378add" onclick="setFlickerColor(this)"></div>
+        <div class="fp-swatch" style="background:#1d9e75" data-c="#1d9e75" onclick="setFlickerColor(this)"></div>
+        <div class="fp-swatch" style="background:#ef9f27" data-c="#ef9f27" onclick="setFlickerColor(this)"></div>
+        <div class="fp-swatch" style="background:#7f77dd" data-c="#7f77dd" onclick="setFlickerColor(this)"></div>
+        <div class="fp-swatch" style="background:#d4537e" data-c="#d4537e" onclick="setFlickerColor(this)"></div>
+        <div class="fp-swatch" style="background:#ffffff" data-c="#ffffff" onclick="setFlickerColor(this)" style="border-color:var(--color-border-secondary)"></div>
+        <div class="fp-swatch" style="background:#fcc78b" data-c="#fcc78b" onclick="setFlickerColor(this)"></div>
+        <div class="fp-swatch" style="background:#639922" data-c="#639922" onclick="setFlickerColor(this)"></div>
+        <div class="fp-swatch" style="background:#ba7517" data-c="#ba7517" onclick="setFlickerColor(this)"></div>
+        <div class="fp-swatch" style="background:#533ab7" data-c="#533ab7" onclick="setFlickerColor(this)"></div>
+        <div class="fp-swatch" style="background:#000000" data-c="#000000" onclick="setFlickerColor(this)"></div>
+      </div>
+      <div style="margin-top:8px;display:flex;align-items:center;gap:8px">
+        <span style="font-size:12px;color:var(--color-text-secondary)">Custom:</span>
+        <div class="color-swatch" style="background:#e24b4a;width:28px;height:28px" id="flicker-custom-swatch">
+          <input type="color" value="#e24b4a" oninput="setFlickerColorHex(this.value)">
+        </div>
+      </div>
+    </div>
+
+    <!-- Export -->
+    <div class="export-area">
+      <div class="ctrl-section-title" style="margin-bottom:10px">Export</div>
+      <button class="export-btn primary" onclick="exportCSS()">Export CSS + HTML</button>
+      <button class="export-btn" onclick="exportReact()">Export as React component</button>
+      <div class="code-out" id="code-out"></div>
+    </div>
+  </div>
+</div>
+
+<style>
+/* Preview bg toggle */
+.preview-dark{background:#1a1a2e!important}
+/* Injected anim styles */
+</style>
+
+<script>
+let GRID = 14;
+let drawColor = '#e24b4a';
+let flickerColor = '#e24b4a';
+let tool = 'draw';
+let isDrawing = false;
+let pixelData = {};
+let layers = {float:true,flicker:true,shadow:true,eyes:true};
+let previewBgDark = false;
+let currentPreset = 'float';
+let animParams = {speed:500,float:10,scale:1.0,rot:0,timing:'ease-in-out'};
+
+// ---- Ghost presets ----
+const GHOST1 = {
+  "0,5":1,"0,6":1,"0,7":1,"0,8":1,
+  "1,3":1,"1,4":1,"1,5":1,"1,6":1,"1,7":1,"1,8":1,"1,9":1,"1,10":1,
+  "2,2":1,"2,3":1,"2,4":1,"2,5":1,"2,6":1,"2,7":1,"2,8":1,"2,9":1,"2,10":1,"2,11":1,
+  "3,1":1,"3,2":1,"3,3":1,"3,4":1,"3,5":1,"3,6":1,"3,7":1,"3,8":1,"3,9":1,"3,10":1,"3,11":1,"3,12":1,
+  "4,1":1,"4,2":1,"4,3":1,"4,4":1,"4,5":1,"4,6":1,"4,7":1,"4,8":1,"4,9":1,"4,10":1,"4,11":1,"4,12":1,
+  "5,1":1,"5,2":1,"5,3":1,"5,4":1,"5,5":1,"5,6":1,"5,7":1,"5,8":1,"5,9":1,"5,10":1,"5,11":1,"5,12":1,
+  "6,0":1,"6,1":1,"6,2":1,"6,3":1,"6,4":1,"6,5":1,"6,6":1,"6,7":1,"6,8":1,"6,9":1,"6,10":1,"6,11":1,"6,12":1,"6,13":1,
+  "7,0":1,"7,1":1,"7,2":1,"7,3":1,"7,4":1,"7,5":1,"7,6":1,"7,7":1,"7,8":1,"7,9":1,"7,10":1,"7,11":1,"7,12":1,"7,13":1,
+  "8,0":1,"8,1":1,"8,2":1,"8,3":1,"8,4":1,"8,5":1,"8,6":1,"8,7":1,"8,8":1,"8,9":1,"8,10":1,"8,11":1,"8,12":1,"8,13":1,
+  "9,0":1,"9,1":1,"9,2":1,"9,3":1,"9,4":1,"9,5":1,"9,6":1,"9,7":1,"9,8":1,"9,9":1,"9,10":1,"9,11":1,"9,12":1,"9,13":1,
+  "10,0":1,"10,1":1,"10,2":1,"10,3":1,"10,4":1,"10,5":1,"10,6":1,"10,7":1,"10,8":1,"10,9":1,"10,10":1,"10,11":1,"10,12":1,"10,13":1,
+  "11,0":1,"11,1":1,"11,2":1,"11,3":1,"11,4":1,"11,5":1,"11,6":1,"11,7":1,"11,8":1,"11,9":1,"11,10":1,"11,11":1,"11,12":1,"11,13":1,
+  "12,0":1,"12,2":1,"12,4":1,"12,6":1,"12,8":1,"12,10":1,"12,12":1,
+  "13,1":1,"13,3":1,"13,5":1,"13,7":1,"13,9":1,"13,11":1,"13,13":1
+};
+
+function initGrid(){
+  const g = document.getElementById('pixel-grid');
+  g.innerHTML='';
+  g.style.gridTemplateColumns=`repeat(${GRID},1fr)`;
+  const cellSz = Math.max(16, Math.floor(420/GRID));
+  for(let r=0;r<GRID;r++){
+    for(let c=0;c<GRID;c++){
+      const d=document.createElement('div');
+      d.className='cell';
+      d.style.width=cellSz+'px';
+      d.style.height=cellSz+'px';
+      d.dataset.r=r; d.dataset.c=c;
+      d.addEventListener('mousedown',e=>{isDrawing=true;paintCell(d)});
+      d.addEventListener('mouseover',e=>{if(isDrawing)paintCell(d)});
+      const k=r+','+c;
+      if(pixelData[k]){d.style.background=pixelData[k]}
+      g.appendChild(d);
+    }
+  }
+  document.addEventListener('mouseup',()=>isDrawing=false);
+}
+
+function paintCell(d){
+  const k=d.dataset.r+','+d.dataset.c;
+  if(tool==='draw'){d.style.background=drawColor;pixelData[k]=drawColor}
+  else if(tool==='erase'){d.style.background='';delete pixelData[k]}
+  else if(tool==='fill'){floodFill(+d.dataset.r,+d.dataset.c,drawColor)}
+  updatePreview();
+}
+
+function floodFill(r,c,color){
+  const k=r+','+c;
+  const orig=pixelData[k]||'';
+  if(orig===color)return;
+  const stack=[[r,c]];
+  while(stack.length){
+    const [cr,cc]=stack.pop();
+    const ck=cr+','+cc;
+    if(cr<0||cr>=GRID||cc<0||cc>=GRID)continue;
+    if((pixelData[ck]||'')!==orig)continue;
+    pixelData[ck]=color;
+    stack.push([cr-1,cc],[cr+1,cc],[cr,cc-1],[cr,cc+1]);
+  }
+  initGrid();
+}
+
+function setTool(t){
+  tool=t;
+  document.querySelectorAll('.tool-btn').forEach(b=>{
+    if(b.id==='btn-'+t)b.classList.add('active'); else b.classList.remove('active');
+  });
+}
+
+function setDrawColor(v){
+  drawColor=v;
+  document.getElementById('active-swatch').style.background=v;
+}
+
+function setFlickerColor(el){
+  document.querySelectorAll('.fp-swatch').forEach(e=>e.classList.remove('selected'));
+  el.classList.add('selected');
+  flickerColor=el.dataset.c;
+  document.getElementById('flicker-custom-swatch').style.background=flickerColor;
+  updatePreview();
+}
+
+function setFlickerColorHex(v){
+  flickerColor=v;
+  document.getElementById('flicker-custom-swatch').style.background=v;
+  updatePreview();
+}
+
+function clearGrid(){pixelData={};initGrid();updatePreview()}
+
+function resizeGrid(v){GRID=+v;pixelData={};initGrid();updatePreview()}
+
+function loadPresetPixels(name){
+  pixelData={};
+  if(name==='ghost1'){
+    Object.keys(GHOST1).forEach(k=>{pixelData[k]=drawColor});
+  } else if(name==='ghost2'){
+    // smiling ghost with eyes
+    const body=[[3,2],[3,3],[3,4],[3,5],[3,6],[3,7],[3,8],[3,9],[3,10],[3,11],
+      [4,1],[4,2],[4,3],[4,4],[4,5],[4,6],[4,7],[4,8],[4,9],[4,10],[4,11],[4,12],
+      [5,0],[5,1],[5,2],[5,3],[5,4],[5,5],[5,6],[5,7],[5,8],[5,9],[5,10],[5,11],[5,12],[5,13],
+      [6,0],[6,1],[6,2],[6,3],[6,4],[6,5],[6,6],[6,7],[6,8],[6,9],[6,10],[6,11],[6,12],[6,13],
+      [7,0],[7,1],[7,2],[7,3],[7,4],[7,5],[7,6],[7,7],[7,8],[7,9],[7,10],[7,11],[7,12],[7,13],
+      [8,0],[8,1],[8,2],[8,3],[8,4],[8,5],[8,6],[8,7],[8,8],[8,9],[8,10],[8,11],[8,12],[8,13],
+      [9,0],[9,1],[9,2],[9,3],[9,4],[9,5],[9,6],[9,7],[9,8],[9,9],[9,10],[9,11],[9,12],[9,13],
+      [10,0],[10,1],[10,2],[10,3],[10,4],[10,5],[10,6],[10,7],[10,8],[10,9],[10,10],[10,11],[10,12],[10,13],
+      [11,0],[11,2],[11,4],[11,6],[11,8],[11,10],[11,12],
+      [12,1],[12,3],[12,5],[12,7],[12,9],[12,11],[12,13]];
+    body.forEach(([r,c])=>{pixelData[r+','+c]=drawColor});
+    // eyes white
+    [[5,3],[5,4],[6,3],[6,4],[5,9],[5,10],[6,9],[6,10]].forEach(([r,c])=>{pixelData[r+','+c]='#ffffff'});
+    // pupils
+    [[6,4],[6,10]].forEach(([r,c])=>{pixelData[r+','+c]='#1a1a2e'});
+    // smile
+    [[8,4],[8,9],[9,5],[9,6],[9,7],[9,8]].forEach(([r,c])=>{pixelData[r+','+c]='#ffffff'});
+  }
+  initGrid();
+  updatePreview();
+}
+
+// ---- Animation presets ----
+const ANIM_PRESETS={
+  float:{float:10,scale:1.0,rot:0,speed:500,timing:'steps(2)'},
+  flicker:{float:8,scale:1.0,rot:0,speed:300,timing:'steps(2)'},
+  pulse:{float:0,scale:1.2,rot:0,speed:800,timing:'ease-in-out'},
+  shake:{float:0,scale:1.0,rot:0,speed:80,timing:'linear'},
+  spin:{float:0,scale:1.0,rot:360,speed:1200,timing:'linear'},
+  wave:{float:5,scale:1.0,rot:0,speed:600,timing:'ease-in-out'},
+  bounce:{float:15,scale:1.1,rot:0,speed:400,timing:'cubic-bezier(0.68,-0.55,0.27,1.55)'},
+  drift:{float:8,scale:1.0,rot:0,speed:2000,timing:'ease-in-out'},
+  heartbeat:{float:0,scale:1.25,rot:0,speed:500,timing:'ease-in-out'},
+  glitch:{float:4,scale:1.0,rot:3,speed:120,timing:'steps(2)'}
+};
+
+function applyAnimPreset(name){
+  currentPreset=name;
+  const p=ANIM_PRESETS[name];
+  animParams={...p};
+  document.getElementById('ctrl-speed').value=p.speed;
+  document.getElementById('ctrl-float').value=p.float;
+  document.getElementById('ctrl-scale').value=p.scale;
+  document.getElementById('ctrl-rot').value=p.rot;
+  document.getElementById('ctrl-timing').value=p.timing;
+  updateValDisplay();
+  updatePreview();
+}
+
+function updateAnimCtrl(){
+  animParams.speed=+document.getElementById('ctrl-speed').value;
+  animParams.float=+document.getElementById('ctrl-float').value;
+  animParams.scale=+document.getElementById('ctrl-scale').value;
+  animParams.rot=+document.getElementById('ctrl-rot').value;
+  animParams.timing=document.getElementById('ctrl-timing').value;
+  updateValDisplay();
+  updatePreview();
+}
+
+function updateValDisplay(){
+  document.getElementById('val-speed').textContent=(animParams.speed/1000).toFixed(2)+'s';
+  document.getElementById('val-float').textContent=animParams.float+'px';
+  document.getElementById('val-scale').textContent=animParams.scale.toFixed(2)+'×';
+  document.getElementById('val-rot').textContent=animParams.rot+'°';
+}
+
+function toggleLayer(name,btn){
+  layers[name]=!layers[name];
+  btn.classList.toggle('on',layers[name]);
+  updatePreview();
+}
+
+function togglePreviewBg(){
+  previewBgDark=!previewBgDark;
+  const pc=document.getElementById('preview-container');
+  if(previewBgDark)pc.classList.add('preview-dark'); else pc.classList.remove('preview-dark');
+}
+
+// ---- Preview renderer ----
+function updatePreview(){
+  const scale=+document.getElementById('preview-scale').value;
+  const sz=GRID*scale;
+  const container=document.getElementById('preview-container');
+
+  // Build pixel colors array
+  const pixels=[];
+  for(let r=0;r<GRID;r++){
+    for(let c=0;c<GRID;c++){
+      pixels.push(pixelData[r+','+c]||'transparent');
+    }
+  }
+
+  // Choose body anim
+  let bodyAnim='none';
+  if(layers.float){
+    if(currentPreset==='shake') bodyAnim='pg-shake';
+    else if(currentPreset==='spin') bodyAnim='pg-spin';
+    else if(currentPreset==='pulse'||currentPreset==='heartbeat') bodyAnim='pg-pulse';
+    else if(currentPreset==='wave') bodyAnim='pg-wave';
+    else if(currentPreset==='bounce') bodyAnim='pg-bounce';
+    else if(currentPreset==='drift') bodyAnim='pg-drift';
+    else if(currentPreset==='glitch') bodyAnim='pg-glitch';
+    else bodyAnim='pg-float';
+  }
+
+  const dur=(animParams.speed/1000).toFixed(2)+'s';
+  const tim=animParams.timing;
+  const fh=animParams.float;
+  const sc=animParams.scale;
+  const ro=animParams.rot;
+
+  // Build inline styles with keyframes via a <style> tag
+  let styleId='dyn-anim-'+Date.now();
+
+  let gridStyle=`display:inline-grid;grid-template-columns:repeat(${GRID},${scale}px);grid-template-rows:repeat(${GRID},${scale}px);gap:0;image-rendering:pixelated;position:relative`;
+
+  // Determine which pixels flicker
+  const bodyColor=Object.values(pixelData).find(v=>v&&v!=='transparent'&&v!=='#ffffff'&&v!=='#1a1a2e')||flickerColor;
+  const bottomRows=[];
+  for(let r=GRID-2;r<GRID;r++){
+    for(let c=0;c<GRID;c++){
+      const k=r+','+c;
+      if(pixelData[k])bottomRows.push({r,c,k});
+    }
+  }
+
+  // Build pixel divs
+  let pixDivs='';
+  pixels.forEach((color,i)=>{
+    const r=Math.floor(i/GRID), c=i%GRID;
+    const k=r+','+c;
+    const inBottom=bottomRows.find(b=>b.k===k);
+    let anim='none';
+    if(layers.flicker && inBottom && color && color!=='transparent'){
+      anim=`pg-f0 ${dur} infinite ${tim}`;
+      if((r+c)%2===1) anim=`pg-f1 ${dur} infinite ${tim}`;
+    }
+    const bg=color||'transparent';
+    pixDivs+=`<div style="width:${scale}px;height:${scale}px;background:${bg};animation:${anim}"></div>`;
+  });
+
+  // Shadow
+  let shadowDiv='';
+  if(layers.shadow){
+    shadowDiv=`<div style="position:absolute;width:${sz*0.7}px;height:${sz*0.2}px;background:rgba(0,0,0,0.4);border-radius:50%;filter:blur(${scale*2}px);bottom:-${scale*2}px;left:50%;transform:translateX(-50%);animation:pg-shadow ${dur} infinite ${tim}"></div>`;
+  }
+
+  // Build keyframe CSS
+  const kcss=`
+@keyframes pg-float{0%,49%{transform:translateY(0)}50%,100%{transform:translateY(-${fh}px)}}
+@keyframes pg-shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-${fh/2}px)}75%{transform:translateX(${fh/2}px)}}
+@keyframes pg-spin{from{transform:rotate(0deg)}to{transform:rotate(${ro}deg)}}
+@keyframes pg-pulse{0%,100%{transform:scale(1)}50%{transform:scale(${sc})}}
+@keyframes pg-wave{0%,100%{transform:skewX(0deg) translateY(0)}50%{transform:skewX(-${fh}deg) translateY(-${fh/3}px)}}
+@keyframes pg-bounce{0%,100%{transform:translateY(0) scaleY(1)}40%{transform:translateY(-${fh}px) scaleY(1.1)}60%{transform:translateY(-${fh*0.5}px) scaleY(0.95)}}
+@keyframes pg-drift{0%,100%{transform:translate(0,0)}25%{transform:translate(${fh/2}px,-${fh/3}px)}50%{transform:translate(${fh}px,0)}75%{transform:translate(${fh/2}px,${fh/3}px)}}
+@keyframes pg-heartbeat{0%,100%{transform:scale(1)}14%{transform:scale(${sc})}28%{transform:scale(1)}42%{transform:scale(${sc*0.9})}70%{transform:scale(1)}}
+@keyframes pg-glitch{0%,100%{transform:translate(0,0) skew(0)}20%{transform:translate(${fh/3}px,0) skew(${ro}deg)}40%{transform:translate(-${fh/3}px,${fh/4}px) skew(-${ro}deg)}60%{transform:translate(${fh/5}px,-${fh/5}px) skew(${ro/2}deg)}}
+@keyframes pg-f0{0%,49%{opacity:1}50%,100%{opacity:0}}
+@keyframes pg-f1{0%,49%{opacity:0}50%,100%{opacity:1}}
+@keyframes pg-shadow{0%,49%{opacity:0.5;transform:translateX(-50%) scaleX(1)}50%,100%{opacity:0.2;transform:translateX(-50%) scaleX(0.8)}}
+`;
+
+  const wrapAnim=bodyAnim!=='none'?`animation:${bodyAnim} ${dur} infinite ${tim}`:'';
+
+  container.innerHTML=`<style>${kcss}</style><div style="position:relative;display:inline-block;${wrapAnim}"><div style="${gridStyle}">${pixDivs}</div>${shadowDiv}</div>`;
+
+  document.getElementById('preview-label').textContent=`${GRID}×${GRID} · ${currentPreset} · ${dur}`;
+}
+
+// ---- Export ----
+function exportCSS(){
+  const out=document.getElementById('code-out');
+  const dur=animParams.speed+'ms';
+  const tim=animParams.timing;
+  const fh=animParams.float;
+
+  let css=`/* Generated by CSS Pixel Animation Builder */\n\n`;
+  css+=`.pixel-anim-wrapper {\n  position:relative;\n  display:inline-block;\n  animation: float-anim ${dur} infinite ${tim};\n}\n\n`;
+  css+=`.pixel-grid {\n  display:grid;\n  grid-template-columns: repeat(${GRID}, 10px);\n  grid-template-rows: repeat(${GRID}, 10px);\n  image-rendering: pixelated;\n}\n\n`;
+
+  // Generate pixel CSS
+  let pixelStyles='';
+  Object.entries(pixelData).forEach(([k,v])=>{
+    const [r,c]=k.split(',');
+    pixelStyles+=`.cell-${r}-${c} { background: ${v}; }\n`;
+  });
+  css+=pixelStyles+'\n';
+  css+=`@keyframes float-anim {\n  0%,49% { transform: translateY(0); }\n  50%,100% { transform: translateY(-${fh}px); }\n}\n`;
+  css+=`@keyframes flicker0 {\n  0%,49% { opacity:1; }\n  50%,100% { opacity:0; }\n}\n`;
+  css+=`@keyframes flicker1 {\n  0%,49% { opacity:0; }\n  50%,100% { opacity:1; }\n}\n`;
+
+  out.style.display='block';
+  out.textContent=css;
+}
+
+function exportReact(){
+  const out=document.getElementById('code-out');
+  const dur=(animParams.speed/1000).toFixed(2)+'s';
+
+  let pixels=[];
+  for(let r=0;r<GRID;r++){
+    for(let c=0;c<GRID;c++){
+      const k=r+','+c;
+      pixels.push(pixelData[k]||'transparent');
+    }
+  }
+
+  let jsx=`import React from 'react';\nimport styled from 'styled-components';\n\nconst PixelLoader = () => (\n  <Wrapper>\n    <div className="body">\n      {[${pixels.map(p=>`'${p}'`).join(',')}].map((color,i) => (\n        <div key={i} style={{background:color}} />\n      ))}\n    </div>\n  </Wrapper>\n);\n\n`;
+  jsx+=`const Wrapper = styled.div\`\n  .body {\n    display: grid;\n    grid-template-columns: repeat(${GRID}, 10px);\n    grid-template-rows: repeat(${GRID}, 10px);\n    animation: float ${dur} infinite steps(2);\n  }\n  @keyframes float {\n    0%,49% { transform: translateY(0); }\n    50%,100% { transform: translateY(-${animParams.float}px); }\n  }\n\`;\n\nexport default PixelLoader;\n`;
+
+  out.style.display='block';
+  out.textContent=jsx;
+}
+
+// ---- Init ----
+loadPresetPixels('ghost1');
+updateValDisplay();
+updatePreview();
+</script>
+</body>
+</html>
