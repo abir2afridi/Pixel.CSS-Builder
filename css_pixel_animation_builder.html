@@ -1,83 +1,473 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CSS Pixel Animation Builder</title>
 <style>
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:var(--font-sans,sans-serif);background:transparent;color:var(--color-text-primary)}
-h2.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
+:root {
+  --bg-primary: #0f1117;
+  --bg-secondary: #161822;
+  --bg-tertiary: #1c1f2e;
+  --bg-elevated: #222538;
+  --bg-hover: #2a2e45;
+  --bg-active: #33385a;
+  --border-subtle: rgba(255,255,255,0.06);
+  --border-default: rgba(255,255,255,0.1);
+  --border-strong: rgba(255,255,255,0.16);
+  --text-primary: #e8eaed;
+  --text-secondary: #9aa0b4;
+  --text-tertiary: #6b7194;
+  --accent: #6c8cff;
+  --accent-hover: #8ba4ff;
+  --accent-bg: rgba(108,140,255,0.12);
+  --accent-border: rgba(108,140,255,0.3);
+  --danger: #f06;
+  --success: #2dd4a8;
+  --warning: #fbbf24;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.3);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.4);
+  --shadow-lg: 0 8px 24px rgba(0,0,0,0.5);
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 10px;
+  --radius-xl: 14px;
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+}
 
-.app{display:grid;grid-template-columns:1fr 340px;gap:0;min-height:600px}
-.canvas-panel{border-right:0.5px solid var(--color-border-tertiary);display:flex;flex-direction:column}
-.controls-panel{display:flex;flex-direction:column;overflow-y:auto;max-height:700px}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: var(--font-sans);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+h2.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); }
+
+.app { display: grid; grid-template-columns: 1fr 360px; min-height: 100vh; }
+
+/* Canvas Panel */
+.canvas-panel {
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--border-subtle);
+  background: var(--bg-primary);
+}
 
 /* Toolbar */
-.toolbar{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:0.5px solid var(--color-border-tertiary);flex-wrap:wrap}
-.toolbar-label{font-size:12px;color:var(--color-text-secondary);margin-right:2px}
-.tool-btn{padding:5px 11px;font-size:12px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);background:transparent;color:var(--color-text-primary);cursor:pointer;transition:background 0.15s}
-.tool-btn:hover{background:var(--color-background-secondary)}
-.tool-btn.active{background:var(--color-background-info);color:var(--color-text-info);border-color:var(--color-border-info)}
-.color-swatch{width:22px;height:22px;border-radius:4px;border:0.5px solid var(--color-border-primary);cursor:pointer;position:relative}
-.color-swatch input[type=color]{opacity:0;position:absolute;inset:0;width:100%;height:100%;cursor:pointer;border:none}
-.sep{width:0.5px;height:20px;background:var(--color-border-tertiary);margin:0 4px}
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-subtle);
+  flex-wrap: wrap;
+}
+.toolbar-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.toolbar-label {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-tertiary);
+  margin-right: 2px;
+  user-select: none;
+}
+.tool-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 10px;
+  font-size: 12px;
+  font-weight: 500;
+  font-family: var(--font-sans);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+  white-space: nowrap;
+}
+.tool-btn:hover { background: var(--bg-hover); color: var(--text-primary); border-color: var(--border-strong); }
+.tool-btn.active {
+  background: var(--accent-bg);
+  color: var(--accent);
+  border-color: var(--accent-border);
+}
+.tool-btn svg { width: 14px; height: 14px; }
+.color-swatch {
+  width: 24px;
+  height: 24px;
+  border-radius: var(--radius-sm);
+  border: 2px solid var(--border-default);
+  cursor: pointer;
+  position: relative;
+  transition: border-color 0.15s;
+}
+.color-swatch:hover { border-color: var(--border-strong); }
+.color-swatch input[type=color] {
+  opacity: 0;
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+  border: none;
+}
+.sep {
+  width: 1px;
+  height: 20px;
+  background: var(--border-subtle);
+  margin: 0 4px;
+  flex-shrink: 0;
+}
 
 /* Grid canvas */
-.grid-wrap{flex:1;display:flex;align-items:center;justify-content:center;padding:24px;background:var(--color-background-secondary)}
-#pixel-grid{display:grid;gap:1px;background:var(--color-border-tertiary);border:0.5px solid var(--color-border-secondary);border-radius:4px}
-.cell{background:var(--color-background-primary);cursor:crosshair;transition:none}
-.cell:hover{opacity:0.7}
+.grid-wrap {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+  background: var(--bg-secondary);
+  position: relative;
+}
+.grid-wrap::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(108,140,255,0.03) 0%, transparent 70%);
+  pointer-events: none;
+}
+#pixel-grid {
+  display: grid;
+  gap: 1px;
+  background: var(--border-subtle);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  position: relative;
+  z-index: 1;
+}
+.cell {
+  background: var(--bg-primary);
+  cursor: crosshair;
+  transition: none;
+}
+.cell:hover { filter: brightness(1.2); }
 
-/* Preview area */
-.preview-bar{display:flex;align-items:center;gap:12px;padding:10px 14px;border-top:0.5px solid var(--color-border-tertiary);border-bottom:0.5px solid var(--color-border-tertiary);background:var(--color-background-primary)}
-.preview-bar span{font-size:12px;color:var(--color-text-secondary)}
-#preview-container{display:flex;align-items:center;justify-content:center;min-width:80px;min-height:40px;position:relative}
+/* Preview bar */
+.preview-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 14px;
+  background: var(--bg-tertiary);
+  border-top: 1px solid var(--border-subtle);
+}
+.preview-bar span { font-size: 11px; color: var(--text-secondary); }
+#preview-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 60px;
+  min-height: 36px;
+  position: relative;
+}
 
 /* Controls panel */
-.ctrl-section{padding:14px 16px;border-bottom:0.5px solid var(--color-border-tertiary)}
-.ctrl-section-title{font-size:11px;font-weight:500;color:var(--color-text-secondary);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px}
-.ctrl-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
-.ctrl-label{font-size:13px;color:var(--color-text-primary)}
-.ctrl-val{font-size:12px;color:var(--color-text-secondary);min-width:36px;text-align:right}
-input[type=range]{width:120px}
+.controls-panel {
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  max-height: 100vh;
+  background: var(--bg-secondary);
+  scrollbar-width: thin;
+  scrollbar-color: var(--bg-hover) transparent;
+}
+.controls-panel::-webkit-scrollbar { width: 5px; }
+.controls-panel::-webkit-scrollbar-track { background: transparent; }
+.controls-panel::-webkit-scrollbar-thumb { background: var(--bg-hover); border-radius: 3px; }
+
+/* Collapsible sections */
+.ctrl-section { border-bottom: 1px solid var(--border-subtle); }
+.ctrl-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.15s;
+}
+.ctrl-section-header:hover { background: var(--bg-hover); }
+.ctrl-section-header .chevron {
+  width: 16px;
+  height: 16px;
+  color: var(--text-tertiary);
+  transition: transform 0.2s ease;
+}
+.ctrl-section.collapsed .chevron { transform: rotate(-90deg); }
+.ctrl-section-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.ctrl-section-body {
+  padding: 0 16px 14px;
+  overflow: hidden;
+  transition: max-height 0.25s ease, opacity 0.2s ease, padding 0.25s ease;
+  max-height: 600px;
+  opacity: 1;
+}
+.ctrl-section.collapsed .ctrl-section-body {
+  max-height: 0;
+  opacity: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.ctrl-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.ctrl-row:last-child { margin-bottom: 0; }
+.ctrl-label { font-size: 13px; color: var(--text-primary); }
+.ctrl-val {
+  font-size: 11px;
+  font-family: var(--font-mono);
+  color: var(--accent);
+  min-width: 40px;
+  text-align: right;
+  background: var(--accent-bg);
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+}
+
+/* Range inputs */
+input[type=range] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 130px;
+  height: 4px;
+  background: var(--bg-hover);
+  border-radius: 2px;
+  outline: none;
+  cursor: pointer;
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  background: var(--accent);
+  border-radius: 50%;
+  border: 2px solid var(--bg-secondary);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+  transition: transform 0.15s;
+}
+input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.2); }
+input[type=range]::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  background: var(--accent);
+  border-radius: 50%;
+  border: 2px solid var(--bg-secondary);
+  cursor: pointer;
+}
+
+/* Select */
+select {
+  padding: 5px 8px;
+  font-size: 12px;
+  font-family: var(--font-sans);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.15s;
+}
+select:hover { border-color: var(--border-strong); }
+select:focus { border-color: var(--accent); }
 
 /* Presets */
-.preset-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:2px}
-.preset-btn{padding:8px 10px;font-size:12px;border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);background:var(--color-background-secondary);color:var(--color-text-primary);cursor:pointer;text-align:left;transition:background 0.15s}
-.preset-btn:hover{background:var(--color-background-primary);border-color:var(--color-border-secondary)}
-.preset-icon{display:block;font-size:18px;margin-bottom:2px;line-height:1}
-.preset-name{font-weight:500;display:block}
-.preset-desc{font-size:10px;color:var(--color-text-secondary);display:block;margin-top:1px}
+.preset-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.preset-btn {
+  padding: 10px;
+  font-size: 12px;
+  font-family: var(--font-sans);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.15s ease;
+  position: relative;
+  overflow: hidden;
+}
+.preset-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(108,140,255,0.08) 0%, transparent 60%);
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.preset-btn:hover { border-color: var(--accent-border); background: var(--bg-elevated); }
+.preset-btn:hover::before { opacity: 1; }
+.preset-icon { display: block; font-size: 20px; margin-bottom: 4px; line-height: 1; position: relative; }
+.preset-name { font-weight: 600; display: block; position: relative; font-size: 12px; }
+.preset-desc { font-size: 10px; color: var(--text-tertiary); display: block; margin-top: 2px; position: relative; }
 
 /* Anim toggles */
-.anim-list{display:flex;flex-direction:column;gap:6px}
-.anim-item{display:flex;align-items:center;justify-content:space-between;padding:7px 10px;border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);background:var(--color-background-secondary)}
-.anim-item-left{display:flex;align-items:center;gap:8px}
-.anim-item-name{font-size:13px}
-.anim-badge{font-size:10px;padding:1px 6px;border-radius:10px;background:var(--color-background-info);color:var(--color-text-info)}
-.toggle{width:32px;height:18px;border-radius:9px;background:var(--color-border-secondary);cursor:pointer;position:relative;transition:background 0.2s;border:none}
-.toggle.on{background:#4f8ef7}
-.toggle::after{content:'';position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:white;transition:transform 0.2s}
-.toggle.on::after{transform:translateX(14px)}
+.anim-list { display: flex; flex-direction: column; gap: 6px; }
+.anim-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--bg-primary);
+  transition: border-color 0.15s;
+}
+.anim-item:hover { border-color: var(--border-strong); }
+.anim-item-left { display: flex; align-items: center; gap: 8px; }
+.anim-item-name { font-size: 13px; }
+.anim-badge {
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 2px 6px;
+  border-radius: 10px;
+  background: var(--accent-bg);
+  color: var(--accent);
+}
+.toggle {
+  width: 34px;
+  height: 18px;
+  border-radius: 9px;
+  background: var(--bg-hover);
+  cursor: pointer;
+  position: relative;
+  transition: background 0.2s;
+  border: none;
+  flex-shrink: 0;
+}
+.toggle.on { background: var(--accent); }
+.toggle::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: white;
+  transition: transform 0.2s;
+  box-shadow: var(--shadow-sm);
+}
+.toggle.on::after { transform: translateX(16px); }
 
 /* Flicker palette */
-.flicker-palette{display:grid;grid-template-columns:repeat(6,1fr);gap:4px;margin-top:4px}
-.fp-swatch{height:22px;border-radius:3px;cursor:pointer;border:2px solid transparent;transition:border-color 0.1s}
-.fp-swatch.selected{border-color:var(--color-text-primary)}
+.flicker-palette { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; }
+.fp-swatch {
+  height: 24px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: all 0.15s;
+}
+.fp-swatch:hover { transform: scale(1.1); z-index: 1; }
+.fp-swatch.selected { border-color: var(--text-primary); box-shadow: 0 0 0 2px var(--bg-secondary); }
 
 /* Export */
-.export-area{padding:14px 16px}
-.export-btn{width:100%;padding:9px;font-size:13px;font-weight:500;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);background:transparent;color:var(--color-text-primary);cursor:pointer;transition:background 0.15s;margin-bottom:8px}
-.export-btn:hover{background:var(--color-background-secondary)}
-.export-btn.primary{background:var(--color-background-info);color:var(--color-text-info);border-color:var(--color-border-info)}
-.export-btn.primary:hover{opacity:0.85}
-.code-out{font-family:var(--font-mono,monospace);font-size:10px;background:var(--color-background-secondary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);padding:10px;max-height:160px;overflow-y:auto;white-space:pre;color:var(--color-text-secondary);display:none;margin-top:8px;word-break:break-all;white-space:pre-wrap}
+.export-area { padding: 0; }
+.export-btn {
+  width: 100%;
+  padding: 10px;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: var(--font-sans);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  margin-bottom: 8px;
+}
+.export-btn:hover { background: var(--bg-hover); border-color: var(--border-strong); }
+.export-btn.primary {
+  background: var(--accent);
+  color: white;
+  border-color: var(--accent);
+}
+.export-btn.primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+.code-out {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  line-height: 1.6;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  padding: 12px;
+  max-height: 200px;
+  overflow-y: auto;
+  color: var(--text-secondary);
+  display: none;
+  margin-top: 8px;
+  word-break: break-all;
+  white-space: pre-wrap;
+  scrollbar-width: thin;
+  scrollbar-color: var(--bg-hover) transparent;
+}
 
 /* Live preview pixel ghost */
-.pg{position:relative;display:inline-block}
-.pg-body{display:grid;image-rendering:pixelated;position:relative}
-.pg-shadow{position:absolute;border-radius:50%;filter:blur(8px);bottom:-8px;left:50%;transform:translateX(-50%)}
+.pg { position: relative; display: inline-block; }
+.pg-body { display: grid; image-rendering: pixelated; position: relative; }
+.pg-shadow { position: absolute; border-radius: 50%; filter: blur(8px); bottom: -8px; left: 50%; transform: translateX(-50%); }
 
-select{padding:4px 8px;font-size:12px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);background:var(--color-background-primary);color:var(--color-text-primary);cursor:pointer}
+/* Preview bg toggle */
+.preview-dark { background: #0d0f1a !important; }
+
+/* Eyedropper cursor */
+.cell.eyedropper { cursor: crosshair !important; }
+.cell.eyedropper:hover { outline: 2px solid var(--accent); outline-offset: -1px; }
+
+/* History badge */
+.history-count {
+  font-size: 9px;
+  font-family: var(--font-mono);
+  color: var(--text-tertiary);
+  padding: 1px 5px;
+  background: var(--bg-primary);
+  border-radius: 8px;
+  margin-left: 4px;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  .app { grid-template-columns: 1fr; }
+  .controls-panel { max-height: none; }
+}
 </style>
 </head>
 <body>
@@ -87,28 +477,66 @@ select{padding:4px 8px;font-size:12px;border:0.5px solid var(--color-border-seco
   <!-- LEFT: Canvas -->
   <div class="canvas-panel">
     <div class="toolbar">
-      <span class="toolbar-label">Tool:</span>
-      <button class="tool-btn active" id="btn-draw" onclick="setTool('draw')">Draw</button>
-      <button class="tool-btn" id="btn-erase" onclick="setTool('erase')">Erase</button>
-      <button class="tool-btn" id="btn-fill" onclick="setTool('fill')">Fill</button>
-      <div class="sep"></div>
-      <span class="toolbar-label">Color:</span>
-      <div class="color-swatch" id="active-swatch" style="background:#e24b4a">
-        <input type="color" id="color-picker" value="#e24b4a" oninput="setDrawColor(this.value)">
+      <div class="toolbar-group">
+        <span class="toolbar-label">Tool</span>
+        <button class="tool-btn active" id="btn-draw" onclick="setTool('draw')" title="Draw (D)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="M2 2l7.586 7.586"/></svg>
+          Draw
+        </button>
+        <button class="tool-btn" id="btn-erase" onclick="setTool('erase')" title="Erase (E)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 20H7L3 16l9-9 8 8-4 4z"/><path d="M6.5 13.5l5-5"/></svg>
+          Erase
+        </button>
+        <button class="tool-btn" id="btn-fill" onclick="setTool('fill')" title="Fill (F)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.9 0 1.7-.1 2.5-.3"/><path d="M19 8l-5 5-2-2-5 5"/></svg>
+          Fill
+        </button>
+        <button class="tool-btn" id="btn-eyedropper" onclick="setTool('eyedropper')" title="Eyedropper (I)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 22l1-1h3l9-9"/><path d="M3 21l9-9"/><circle cx="18" cy="6" r="4"/></svg>
+        </button>
       </div>
+
       <div class="sep"></div>
-      <select id="grid-size" onchange="resizeGrid(this.value)">
-        <option value="8">8×8</option>
-        <option value="10">10×10</option>
-        <option value="14" selected>14×14</option>
-        <option value="16">16×16</option>
-        <option value="20">20×20</option>
-        <option value="24">24×24</option>
-      </select>
+
+      <div class="toolbar-group">
+        <span class="toolbar-label">Color</span>
+        <div class="color-swatch" id="active-swatch" style="background:#e24b4a">
+          <input type="color" id="color-picker" value="#e24b4a" oninput="setDrawColor(this.value)">
+        </div>
+      </div>
+
       <div class="sep"></div>
-      <button class="tool-btn" onclick="clearGrid()">Clear</button>
-      <button class="tool-btn" onclick="loadPresetPixels('ghost1')">Ghost 1</button>
-      <button class="tool-btn" onclick="loadPresetPixels('ghost2')">Ghost 2</button>
+
+      <div class="toolbar-group">
+        <select id="grid-size" onchange="resizeGrid(this.value)">
+          <option value="8">8×8</option>
+          <option value="10">10×10</option>
+          <option value="14" selected>14×14</option>
+          <option value="16">16×16</option>
+          <option value="20">20×20</option>
+          <option value="24">24×24</option>
+        </select>
+      </div>
+
+      <div class="sep"></div>
+
+      <div class="toolbar-group">
+        <button class="tool-btn" id="btn-undo" onclick="undo()" title="Undo (Ctrl+Z)" style="opacity:0.4;pointer-events:none">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 10h10a5 5 0 015 5v2"/><path d="M3 10l5-5M3 10l5 5"/></svg>
+        </button>
+        <button class="tool-btn" id="btn-redo" onclick="redo()" title="Redo (Ctrl+Y)" style="opacity:0.4;pointer-events:none">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10H11a5 5 0 00-5 5v2"/><path d="M21 10l-5-5M21 10l-5 5"/></svg>
+        </button>
+        <span class="history-count" id="history-count"></span>
+      </div>
+
+      <div class="sep"></div>
+
+      <div class="toolbar-group">
+        <button class="tool-btn" onclick="clearGrid()">Clear</button>
+        <button class="tool-btn" onclick="loadPresetPixels('ghost1')">Ghost 1</button>
+        <button class="tool-btn" onclick="loadPresetPixels('ghost2')">Ghost 2</button>
+      </div>
     </div>
 
     <div class="grid-wrap">
@@ -116,11 +544,11 @@ select{padding:4px 8px;font-size:12px;border:0.5px solid var(--color-border-seco
     </div>
 
     <div class="preview-bar">
-      <span>Live preview:</span>
+      <span>Preview</span>
       <div id="preview-container"></div>
-      <span id="preview-label" style="font-size:11px;color:var(--color-text-secondary)"></span>
-      <div style="margin-left:auto;display:flex;gap:6px">
-        <button class="tool-btn" onclick="togglePreviewBg()">Toggle BG</button>
+      <span id="preview-label" style="font-size:10px;font-family:var(--font-mono);color:var(--text-tertiary)"></span>
+      <div style="margin-left:auto;display:flex;gap:6px;align-items:center">
+        <button class="tool-btn" onclick="togglePreviewBg()">BG</button>
         <select id="preview-scale" onchange="updatePreview()">
           <option value="2">2×</option>
           <option value="3" selected>3×</option>
@@ -134,172 +562,194 @@ select{padding:4px 8px;font-size:12px;border:0.5px solid var(--color-border-seco
   <div class="controls-panel">
 
     <!-- Presets -->
-    <div class="ctrl-section">
-      <div class="ctrl-section-title">Animation presets</div>
-      <div class="preset-grid">
-        <button class="preset-btn" onclick="applyAnimPreset('float')">
-          <span class="preset-icon">👻</span>
-          <span class="preset-name">Float</span>
-          <span class="preset-desc">Up-down hover loop</span>
-        </button>
-        <button class="preset-btn" onclick="applyAnimPreset('flicker')">
-          <span class="preset-icon">✨</span>
-          <span class="preset-name">Flicker</span>
-          <span class="preset-desc">Pixel flicker tentacles</span>
-        </button>
-        <button class="preset-btn" onclick="applyAnimPreset('pulse')">
-          <span class="preset-icon">💓</span>
-          <span class="preset-name">Pulse</span>
-          <span class="preset-desc">Scale breathe effect</span>
-        </button>
-        <button class="preset-btn" onclick="applyAnimPreset('shake')">
-          <span class="preset-icon">⚡</span>
-          <span class="preset-name">Shake</span>
-          <span class="preset-desc">Rapid X jitter</span>
-        </button>
-        <button class="preset-btn" onclick="applyAnimPreset('spin')">
-          <span class="preset-icon">🌀</span>
-          <span class="preset-name">Spin</span>
-          <span class="preset-desc">Full 360 rotation</span>
-        </button>
-        <button class="preset-btn" onclick="applyAnimPreset('wave')">
-          <span class="preset-icon">🌊</span>
-          <span class="preset-name">Wave</span>
-          <span class="preset-desc">Skew side to side</span>
-        </button>
-        <button class="preset-btn" onclick="applyAnimPreset('bounce')">
-          <span class="preset-icon">🏀</span>
-          <span class="preset-name">Bounce</span>
-          <span class="preset-desc">Squash & stretch</span>
-        </button>
-        <button class="preset-btn" onclick="applyAnimPreset('drift')">
-          <span class="preset-icon">🍃</span>
-          <span class="preset-name">Drift</span>
-          <span class="preset-desc">Slow X+Y drift</span>
-        </button>
-        <button class="preset-btn" onclick="applyAnimPreset('heartbeat')">
-          <span class="preset-icon">❤️</span>
-          <span class="preset-name">Heartbeat</span>
-          <span class="preset-desc">Double-pump scale</span>
-        </button>
-        <button class="preset-btn" onclick="applyAnimPreset('glitch')">
-          <span class="preset-icon">📺</span>
-          <span class="preset-name">Glitch</span>
-          <span class="preset-desc">Skew + translate</span>
-        </button>
+    <div class="ctrl-section" id="sec-presets">
+      <div class="ctrl-section-header" onclick="toggleSection('sec-presets')">
+        <div class="ctrl-section-title">Animation presets</div>
+        <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+      </div>
+      <div class="ctrl-section-body">
+        <div class="preset-grid">
+          <button class="preset-btn" onclick="applyAnimPreset('float')">
+            <span class="preset-icon">&#x1F47B;</span>
+            <span class="preset-name">Float</span>
+            <span class="preset-desc">Up-down hover loop</span>
+          </button>
+          <button class="preset-btn" onclick="applyAnimPreset('flicker')">
+            <span class="preset-icon">&#x2728;</span>
+            <span class="preset-name">Flicker</span>
+            <span class="preset-desc">Pixel flicker tentacles</span>
+          </button>
+          <button class="preset-btn" onclick="applyAnimPreset('pulse')">
+            <span class="preset-icon">&#x1F493;</span>
+            <span class="preset-name">Pulse</span>
+            <span class="preset-desc">Scale breathe effect</span>
+          </button>
+          <button class="preset-btn" onclick="applyAnimPreset('shake')">
+            <span class="preset-icon">&#x26A1;</span>
+            <span class="preset-name">Shake</span>
+            <span class="preset-desc">Rapid X jitter</span>
+          </button>
+          <button class="preset-btn" onclick="applyAnimPreset('spin')">
+            <span class="preset-icon">&#x1F300;</span>
+            <span class="preset-name">Spin</span>
+            <span class="preset-desc">Full 360 rotation</span>
+          </button>
+          <button class="preset-btn" onclick="applyAnimPreset('wave')">
+            <span class="preset-icon">&#x1F30A;</span>
+            <span class="preset-name">Wave</span>
+            <span class="preset-desc">Skew side to side</span>
+          </button>
+          <button class="preset-btn" onclick="applyAnimPreset('bounce')">
+            <span class="preset-icon">&#x1F3C0;</span>
+            <span class="preset-name">Bounce</span>
+            <span class="preset-desc">Squash &amp; stretch</span>
+          </button>
+          <button class="preset-btn" onclick="applyAnimPreset('drift')">
+            <span class="preset-icon">&#x1F343;</span>
+            <span class="preset-name">Drift</span>
+            <span class="preset-desc">Slow X+Y drift</span>
+          </button>
+          <button class="preset-btn" onclick="applyAnimPreset('heartbeat')">
+            <span class="preset-icon">&#x2764;&#xFE0F;</span>
+            <span class="preset-name">Heartbeat</span>
+            <span class="preset-desc">Double-pump scale</span>
+          </button>
+          <button class="preset-btn" onclick="applyAnimPreset('glitch')">
+            <span class="preset-icon">&#x1F4FA;</span>
+            <span class="preset-name">Glitch</span>
+            <span class="preset-desc">Skew + translate</span>
+          </button>
+        </div>
       </div>
     </div>
 
     <!-- Animation controls -->
-    <div class="ctrl-section">
-      <div class="ctrl-section-title">Animation controls</div>
-      <div class="ctrl-row">
-        <span class="ctrl-label">Speed</span>
-        <input type="range" id="ctrl-speed" min="100" max="3000" step="50" value="500" oninput="updateAnimCtrl()">
-        <span class="ctrl-val" id="val-speed">0.5s</span>
+    <div class="ctrl-section" id="sec-controls">
+      <div class="ctrl-section-header" onclick="toggleSection('sec-controls')">
+        <div class="ctrl-section-title">Animation controls</div>
+        <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
       </div>
-      <div class="ctrl-row">
-        <span class="ctrl-label">Float height</span>
-        <input type="range" id="ctrl-float" min="2" max="30" step="1" value="10" oninput="updateAnimCtrl()">
-        <span class="ctrl-val" id="val-float">10px</span>
-      </div>
-      <div class="ctrl-row">
-        <span class="ctrl-label">Scale factor</span>
-        <input type="range" id="ctrl-scale" min="1.0" max="2.0" step="0.05" value="1.0" oninput="updateAnimCtrl()">
-        <span class="ctrl-val" id="val-scale">1.0×</span>
-      </div>
-      <div class="ctrl-row">
-        <span class="ctrl-label">Rotation deg</span>
-        <input type="range" id="ctrl-rot" min="0" max="360" step="5" value="0" oninput="updateAnimCtrl()">
-        <span class="ctrl-val" id="val-rot">0°</span>
-      </div>
-      <div class="ctrl-row">
-        <span class="ctrl-label">Timing fn</span>
-        <select id="ctrl-timing" onchange="updateAnimCtrl()">
-          <option value="ease-in-out">ease-in-out</option>
-          <option value="linear">linear</option>
-          <option value="steps(2)">steps(2) — pixel</option>
-          <option value="steps(4)">steps(4)</option>
-          <option value="cubic-bezier(0.68,-0.55,0.27,1.55)">spring</option>
-        </select>
+      <div class="ctrl-section-body">
+        <div class="ctrl-row">
+          <span class="ctrl-label">Speed</span>
+          <input type="range" id="ctrl-speed" min="100" max="3000" step="50" value="500" oninput="updateAnimCtrl()">
+          <span class="ctrl-val" id="val-speed">0.50s</span>
+        </div>
+        <div class="ctrl-row">
+          <span class="ctrl-label">Float height</span>
+          <input type="range" id="ctrl-float" min="2" max="30" step="1" value="10" oninput="updateAnimCtrl()">
+          <span class="ctrl-val" id="val-float">10px</span>
+        </div>
+        <div class="ctrl-row">
+          <span class="ctrl-label">Scale factor</span>
+          <input type="range" id="ctrl-scale" min="1.0" max="2.0" step="0.05" value="1.0" oninput="updateAnimCtrl()">
+          <span class="ctrl-val" id="val-scale">1.00×</span>
+        </div>
+        <div class="ctrl-row">
+          <span class="ctrl-label">Rotation</span>
+          <input type="range" id="ctrl-rot" min="0" max="360" step="5" value="0" oninput="updateAnimCtrl()">
+          <span class="ctrl-val" id="val-rot">0°</span>
+        </div>
+        <div class="ctrl-row">
+          <span class="ctrl-label">Timing</span>
+          <select id="ctrl-timing" onchange="updateAnimCtrl()">
+            <option value="ease-in-out">ease-in-out</option>
+            <option value="linear">linear</option>
+            <option value="steps(2)">steps(2) — pixel</option>
+            <option value="steps(4)">steps(4)</option>
+            <option value="cubic-bezier(0.68,-0.55,0.27,1.55)">spring</option>
+          </select>
+        </div>
       </div>
     </div>
 
     <!-- Layer toggles -->
-    <div class="ctrl-section">
-      <div class="ctrl-section-title">Animation layers</div>
-      <div class="anim-list">
-        <div class="anim-item">
-          <div class="anim-item-left">
-            <span class="anim-item-name">Float</span>
-            <span class="anim-badge">body</span>
+    <div class="ctrl-section" id="sec-layers">
+      <div class="ctrl-section-header" onclick="toggleSection('sec-layers')">
+        <div class="ctrl-section-title">Animation layers</div>
+        <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+      </div>
+      <div class="ctrl-section-body">
+        <div class="anim-list">
+          <div class="anim-item">
+            <div class="anim-item-left">
+              <span class="anim-item-name">Float</span>
+              <span class="anim-badge">body</span>
+            </div>
+            <button class="toggle on" id="tog-float" onclick="toggleLayer('float',this)"></button>
           </div>
-          <button class="toggle on" id="tog-float" onclick="toggleLayer('float',this)"></button>
-        </div>
-        <div class="anim-item">
-          <div class="anim-item-left">
-            <span class="anim-item-name">Flicker</span>
-            <span class="anim-badge">pixels</span>
+          <div class="anim-item">
+            <div class="anim-item-left">
+              <span class="anim-item-name">Flicker</span>
+              <span class="anim-badge">pixels</span>
+            </div>
+            <button class="toggle on" id="tog-flicker" onclick="toggleLayer('flicker',this)"></button>
           </div>
-          <button class="toggle on" id="tog-flicker" onclick="toggleLayer('flicker',this)"></button>
-        </div>
-        <div class="anim-item">
-          <div class="anim-item-left">
-            <span class="anim-item-name">Shadow</span>
-            <span class="anim-badge">ground</span>
+          <div class="anim-item">
+            <div class="anim-item-left">
+              <span class="anim-item-name">Shadow</span>
+              <span class="anim-badge">ground</span>
+            </div>
+            <button class="toggle on" id="tog-shadow" onclick="toggleLayer('shadow',this)"></button>
           </div>
-          <button class="toggle on" id="tog-shadow" onclick="toggleLayer('shadow',this)"></button>
-        </div>
-        <div class="anim-item">
-          <div class="anim-item-left">
-            <span class="anim-item-name">Eye movement</span>
-            <span class="anim-badge">pupils</span>
+          <div class="anim-item">
+            <div class="anim-item-left">
+              <span class="anim-item-name">Eye movement</span>
+              <span class="anim-badge">pupils</span>
+            </div>
+            <button class="toggle on" id="tog-eyes" onclick="toggleLayer('eyes',this)"></button>
           </div>
-          <button class="toggle on" id="tog-eyes" onclick="toggleLayer('eyes',this)"></button>
         </div>
       </div>
     </div>
 
     <!-- Flicker color -->
-    <div class="ctrl-section">
-      <div class="ctrl-section-title">Flicker pixel color</div>
-      <div class="flicker-palette">
-        <div class="fp-swatch selected" style="background:#e24b4a" data-c="#e24b4a" onclick="setFlickerColor(this)"></div>
-        <div class="fp-swatch" style="background:#378add" data-c="#378add" onclick="setFlickerColor(this)"></div>
-        <div class="fp-swatch" style="background:#1d9e75" data-c="#1d9e75" onclick="setFlickerColor(this)"></div>
-        <div class="fp-swatch" style="background:#ef9f27" data-c="#ef9f27" onclick="setFlickerColor(this)"></div>
-        <div class="fp-swatch" style="background:#7f77dd" data-c="#7f77dd" onclick="setFlickerColor(this)"></div>
-        <div class="fp-swatch" style="background:#d4537e" data-c="#d4537e" onclick="setFlickerColor(this)"></div>
-        <div class="fp-swatch" style="background:#ffffff" data-c="#ffffff" onclick="setFlickerColor(this)" style="border-color:var(--color-border-secondary)"></div>
-        <div class="fp-swatch" style="background:#fcc78b" data-c="#fcc78b" onclick="setFlickerColor(this)"></div>
-        <div class="fp-swatch" style="background:#639922" data-c="#639922" onclick="setFlickerColor(this)"></div>
-        <div class="fp-swatch" style="background:#ba7517" data-c="#ba7517" onclick="setFlickerColor(this)"></div>
-        <div class="fp-swatch" style="background:#533ab7" data-c="#533ab7" onclick="setFlickerColor(this)"></div>
-        <div class="fp-swatch" style="background:#000000" data-c="#000000" onclick="setFlickerColor(this)"></div>
+    <div class="ctrl-section" id="sec-flicker">
+      <div class="ctrl-section-header" onclick="toggleSection('sec-flicker')">
+        <div class="ctrl-section-title">Flicker pixel color</div>
+        <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
       </div>
-      <div style="margin-top:8px;display:flex;align-items:center;gap:8px">
-        <span style="font-size:12px;color:var(--color-text-secondary)">Custom:</span>
-        <div class="color-swatch" style="background:#e24b4a;width:28px;height:28px" id="flicker-custom-swatch">
-          <input type="color" value="#e24b4a" oninput="setFlickerColorHex(this.value)">
+      <div class="ctrl-section-body">
+        <div class="flicker-palette">
+          <div class="fp-swatch selected" style="background:#e24b4a" data-c="#e24b4a" onclick="setFlickerColor(this)"></div>
+          <div class="fp-swatch" style="background:#378add" data-c="#378add" onclick="setFlickerColor(this)"></div>
+          <div class="fp-swatch" style="background:#1d9e75" data-c="#1d9e75" onclick="setFlickerColor(this)"></div>
+          <div class="fp-swatch" style="background:#ef9f27" data-c="#ef9f27" onclick="setFlickerColor(this)"></div>
+          <div class="fp-swatch" style="background:#7f77dd" data-c="#7f77dd" onclick="setFlickerColor(this)"></div>
+          <div class="fp-swatch" style="background:#d4537e" data-c="#d4537e" onclick="setFlickerColor(this)"></div>
+          <div class="fp-swatch" style="background:#ffffff" data-c="#ffffff" onclick="setFlickerColor(this)"></div>
+          <div class="fp-swatch" style="background:#fcc78b" data-c="#fcc78b" onclick="setFlickerColor(this)"></div>
+          <div class="fp-swatch" style="background:#639922" data-c="#639922" onclick="setFlickerColor(this)"></div>
+          <div class="fp-swatch" style="background:#ba7517" data-c="#ba7517" onclick="setFlickerColor(this)"></div>
+          <div class="fp-swatch" style="background:#533ab7" data-c="#533ab7" onclick="setFlickerColor(this)"></div>
+          <div class="fp-swatch" style="background:#000000" data-c="#000000" onclick="setFlickerColor(this)"></div>
+        </div>
+        <div style="margin-top:10px;display:flex;align-items:center;gap:8px">
+          <span style="font-size:11px;color:var(--text-tertiary)">Custom</span>
+          <div class="color-swatch" style="background:#e24b4a;width:28px;height:28px" id="flicker-custom-swatch">
+            <input type="color" value="#e24b4a" oninput="setFlickerColorHex(this.value)">
+          </div>
         </div>
       </div>
     </div>
 
     <!-- Export -->
-    <div class="export-area">
-      <div class="ctrl-section-title" style="margin-bottom:10px">Export</div>
-      <button class="export-btn primary" onclick="exportCSS()">Export CSS + HTML</button>
-      <button class="export-btn" onclick="exportReact()">Export as React component</button>
-      <div class="code-out" id="code-out"></div>
+    <div class="ctrl-section" id="sec-export">
+      <div class="ctrl-section-header" onclick="toggleSection('sec-export')">
+        <div class="ctrl-section-title">Export</div>
+        <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+      </div>
+      <div class="ctrl-section-body">
+        <div class="export-area">
+          <button class="export-btn primary" onclick="exportCSS()">Export CSS + HTML</button>
+          <button class="export-btn" onclick="exportReact()">Export as React component</button>
+          <div class="code-out" id="code-out"></div>
+        </div>
+      </div>
     </div>
+
   </div>
 </div>
-
-<style>
-/* Preview bg toggle */
-.preview-dark{background:#1a1a2e!important}
-/* Injected anim styles */
-</style>
 
 <script>
 let GRID = 14;
@@ -312,6 +762,63 @@ let layers = {float:true,flicker:true,shadow:true,eyes:true};
 let previewBgDark = false;
 let currentPreset = 'float';
 let animParams = {speed:500,float:10,scale:1.0,rot:0,timing:'ease-in-out'};
+
+// ---- Undo/Redo ----
+let history = [];
+let historyIndex = -1;
+const MAX_HISTORY = 80;
+
+function snapshot() {
+  const snap = JSON.stringify(pixelData);
+  if (historyIndex < history.length - 1) {
+    history = history.slice(0, historyIndex + 1);
+  }
+  history.push(snap);
+  if (history.length > MAX_HISTORY) history.shift();
+  historyIndex = history.length - 1;
+  updateHistoryUI();
+}
+
+function undo() {
+  if (historyIndex <= 0) return;
+  historyIndex--;
+  pixelData = JSON.parse(history[historyIndex]);
+  initGrid();
+  updatePreview();
+  updateHistoryUI();
+}
+
+function redo() {
+  if (historyIndex >= history.length - 1) return;
+  historyIndex++;
+  pixelData = JSON.parse(history[historyIndex]);
+  initGrid();
+  updatePreview();
+  updateHistoryUI();
+}
+
+function updateHistoryUI() {
+  const undoBtn = document.getElementById('btn-undo');
+  const redoBtn = document.getElementById('btn-redo');
+  const countEl = document.getElementById('history-count');
+  const canUndo = historyIndex > 0;
+  const canRedo = historyIndex < history.length - 1;
+  undoBtn.style.opacity = canUndo ? '1' : '0.4';
+  undoBtn.style.pointerEvents = canUndo ? 'auto' : 'none';
+  redoBtn.style.opacity = canRedo ? '1' : '0.4';
+  redoBtn.style.pointerEvents = canRedo ? 'auto' : 'none';
+  countEl.textContent = history.length > 1 ? `${historyIndex + 1}/${history.length}` : '';
+}
+
+// ---- Keyboard shortcuts ----
+document.addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'z') { e.preventDefault(); undo(); }
+  else if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.shiftKey && e.key === 'z'))) { e.preventDefault(); redo(); }
+  else if (e.key === 'd' || e.key === 'D') { if (!e.ctrlKey && !e.metaKey) setTool('draw'); }
+  else if (e.key === 'e' || e.key === 'E') { if (!e.ctrlKey && !e.metaKey) setTool('erase'); }
+  else if (e.key === 'f' || e.key === 'F') { if (!e.ctrlKey && !e.metaKey) setTool('fill'); }
+  else if (e.key === 'i' || e.key === 'I') { if (!e.ctrlKey && !e.metaKey) setTool('eyedropper'); }
+});
 
 // ---- Ghost presets ----
 const GHOST1 = {
@@ -355,10 +862,38 @@ function initGrid(){
 
 function paintCell(d){
   const k=d.dataset.r+','+d.dataset.c;
-  if(tool==='draw'){d.style.background=drawColor;pixelData[k]=drawColor}
-  else if(tool==='erase'){d.style.background='';delete pixelData[k]}
-  else if(tool==='fill'){floodFill(+d.dataset.r,+d.dataset.c,drawColor)}
-  updatePreview();
+  if(tool==='draw'){
+    if(pixelData[k]===drawColor) return;
+    d.style.background=drawColor;
+    pixelData[k]=drawColor;
+    updatePreview();
+    debouncedSnapshot();
+  }
+  else if(tool==='erase'){
+    if(!pixelData[k]) return;
+    d.style.background='';
+    delete pixelData[k];
+    updatePreview();
+    debouncedSnapshot();
+  }
+  else if(tool==='fill'){
+    floodFill(+d.dataset.r,+d.dataset.c,drawColor);
+    snapshot();
+  }
+  else if(tool==='eyedropper'){
+    const color = pixelData[k];
+    if(color){
+      setDrawColor(color);
+      document.getElementById('color-picker').value = color;
+      setTool('draw');
+    }
+  }
+}
+
+let snapshotTimer = null;
+function debouncedSnapshot(){
+  clearTimeout(snapshotTimer);
+  snapshotTimer = setTimeout(snapshot, 150);
 }
 
 function floodFill(r,c,color){
@@ -379,8 +914,14 @@ function floodFill(r,c,color){
 
 function setTool(t){
   tool=t;
-  document.querySelectorAll('.tool-btn').forEach(b=>{
-    if(b.id==='btn-'+t)b.classList.add('active'); else b.classList.remove('active');
+  document.querySelectorAll('.toolbar-group .tool-btn').forEach(b=>{
+    const id = b.id;
+    if(id==='btn-'+t) b.classList.add('active');
+    else if(id && id.startsWith('btn-')) b.classList.remove('active');
+  });
+  // Update cursor
+  document.querySelectorAll('.cell').forEach(c => {
+    c.classList.toggle('eyedropper', t === 'eyedropper');
   });
 }
 
@@ -403,16 +944,29 @@ function setFlickerColorHex(v){
   updatePreview();
 }
 
-function clearGrid(){pixelData={};initGrid();updatePreview()}
+function clearGrid(){
+  snapshot();
+  pixelData={};
+  initGrid();
+  updatePreview();
+  snapshot();
+}
 
-function resizeGrid(v){GRID=+v;pixelData={};initGrid();updatePreview()}
+function resizeGrid(v){
+  GRID=+v;
+  snapshot();
+  pixelData={};
+  initGrid();
+  updatePreview();
+  snapshot();
+}
 
 function loadPresetPixels(name){
+  snapshot();
   pixelData={};
   if(name==='ghost1'){
     Object.keys(GHOST1).forEach(k=>{pixelData[k]=drawColor});
   } else if(name==='ghost2'){
-    // smiling ghost with eyes
     const body=[[3,2],[3,3],[3,4],[3,5],[3,6],[3,7],[3,8],[3,9],[3,10],[3,11],
       [4,1],[4,2],[4,3],[4,4],[4,5],[4,6],[4,7],[4,8],[4,9],[4,10],[4,11],[4,12],
       [5,0],[5,1],[5,2],[5,3],[5,4],[5,5],[5,6],[5,7],[5,8],[5,9],[5,10],[5,11],[5,12],[5,13],
@@ -424,15 +978,13 @@ function loadPresetPixels(name){
       [11,0],[11,2],[11,4],[11,6],[11,8],[11,10],[11,12],
       [12,1],[12,3],[12,5],[12,7],[12,9],[12,11],[12,13]];
     body.forEach(([r,c])=>{pixelData[r+','+c]=drawColor});
-    // eyes white
     [[5,3],[5,4],[6,3],[6,4],[5,9],[5,10],[6,9],[6,10]].forEach(([r,c])=>{pixelData[r+','+c]='#ffffff'});
-    // pupils
     [[6,4],[6,10]].forEach(([r,c])=>{pixelData[r+','+c]='#1a1a2e'});
-    // smile
     [[8,4],[8,9],[9,5],[9,6],[9,7],[9,8]].forEach(([r,c])=>{pixelData[r+','+c]='#ffffff'});
   }
   initGrid();
   updatePreview();
+  snapshot();
 }
 
 // ---- Animation presets ----
@@ -491,13 +1043,16 @@ function togglePreviewBg(){
   if(previewBgDark)pc.classList.add('preview-dark'); else pc.classList.remove('preview-dark');
 }
 
+function toggleSection(id){
+  document.getElementById(id).classList.toggle('collapsed');
+}
+
 // ---- Preview renderer ----
 function updatePreview(){
   const scale=+document.getElementById('preview-scale').value;
   const sz=GRID*scale;
   const container=document.getElementById('preview-container');
 
-  // Build pixel colors array
   const pixels=[];
   for(let r=0;r<GRID;r++){
     for(let c=0;c<GRID;c++){
@@ -505,7 +1060,6 @@ function updatePreview(){
     }
   }
 
-  // Choose body anim
   let bodyAnim='none';
   if(layers.float){
     if(currentPreset==='shake') bodyAnim='pg-shake';
@@ -524,12 +1078,8 @@ function updatePreview(){
   const sc=animParams.scale;
   const ro=animParams.rot;
 
-  // Build inline styles with keyframes via a <style> tag
-  let styleId='dyn-anim-'+Date.now();
-
   let gridStyle=`display:inline-grid;grid-template-columns:repeat(${GRID},${scale}px);grid-template-rows:repeat(${GRID},${scale}px);gap:0;image-rendering:pixelated;position:relative`;
 
-  // Determine which pixels flicker
   const bodyColor=Object.values(pixelData).find(v=>v&&v!=='transparent'&&v!=='#ffffff'&&v!=='#1a1a2e')||flickerColor;
   const bottomRows=[];
   for(let r=GRID-2;r<GRID;r++){
@@ -539,7 +1089,6 @@ function updatePreview(){
     }
   }
 
-  // Build pixel divs
   let pixDivs='';
   pixels.forEach((color,i)=>{
     const r=Math.floor(i/GRID), c=i%GRID;
@@ -554,13 +1103,11 @@ function updatePreview(){
     pixDivs+=`<div style="width:${scale}px;height:${scale}px;background:${bg};animation:${anim}"></div>`;
   });
 
-  // Shadow
   let shadowDiv='';
   if(layers.shadow){
     shadowDiv=`<div style="position:absolute;width:${sz*0.7}px;height:${sz*0.2}px;background:rgba(0,0,0,0.4);border-radius:50%;filter:blur(${scale*2}px);bottom:-${scale*2}px;left:50%;transform:translateX(-50%);animation:pg-shadow ${dur} infinite ${tim}"></div>`;
   }
 
-  // Build keyframe CSS
   const kcss=`
 @keyframes pg-float{0%,49%{transform:translateY(0)}50%,100%{transform:translateY(-${fh}px)}}
 @keyframes pg-shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-${fh/2}px)}75%{transform:translateX(${fh/2}px)}}
@@ -594,7 +1141,6 @@ function exportCSS(){
   css+=`.pixel-anim-wrapper {\n  position:relative;\n  display:inline-block;\n  animation: float-anim ${dur} infinite ${tim};\n}\n\n`;
   css+=`.pixel-grid {\n  display:grid;\n  grid-template-columns: repeat(${GRID}, 10px);\n  grid-template-rows: repeat(${GRID}, 10px);\n  image-rendering: pixelated;\n}\n\n`;
 
-  // Generate pixel CSS
   let pixelStyles='';
   Object.entries(pixelData).forEach(([k,v])=>{
     const [r,c]=k.split(',');
@@ -630,6 +1176,7 @@ function exportReact(){
 
 // ---- Init ----
 loadPresetPixels('ghost1');
+snapshot();
 updateValDisplay();
 updatePreview();
 </script>
